@@ -1,0 +1,251 @@
+---
+title: "Covid Spread Modelling"
+author: "Zheng Ren"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning = FALSE)
+options(scipen=999)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(broom)
+library(knitr)
+library(stringr)
+library(glue)
+library(kableExtra)
+library(parallel)
+library(Rcpp)
+library(rbenchmark)
+library(microbenchmark)
+library("RColorBrewer")
+setwd("~/Desktop/PennSIVE/Penn Class/BSTA_670/hw/Final Project/code/covidmc")
+library(covidmc)
+uk_boot = read_csv("../../uk_tune.csv")
+us_boot = read_csv("../../us_new.csv")
+data(covid_df)
+```
+
+# Introduction
+
+The coronavirus disease 2019 (COVID-19) epidemic was officially declared as a pandemic in early March 2020 by WHO and has caused heavy life losses and damages to social-economics globally. A better understanding of the spread of virus is essential for preventing potential eruptions of the disease, better allocating social and medical resources, and diminishing the overall time that a pandemic lasts.
+
+This study is based on Gang Xie's paper 'A novel Monte carlo simulation procedure for modelling COVID-19 spread over time' (2020), aiming to develop a COVID-19 spread dynamics model that can be used as a decision making tool for disease control. The proposed method is characterized by a Monte Carlo Simulation model, which captured infection rate and population changes, and treated each individual in a population as a random point. 
+
+This study builds on top of Xie's model. The proposed model includes daily estimated total number of confirmed cases in the outputs as well. To better adapt the proposed model to real world situation, real world COVID data is applied to the model for a more accurate infection rate pattern and population limits. Other parameters are also tuned to best fit each country's total confirmed cases pattern. 
+
+# Method
+
+The key parameters and assumptions of the proposed model were: (1) the infection rate parameter "Rt"; (2) the actual number of people being infected by each infection active case is determined by a Poisson distribution with the mean Rt; (3) the exact number of days for someone getting infected follows a negative binomial distribution with the mean/expected time "muT" in days; (4) The limit of the number of people and the immunity proportion in a study population; (5) Other initial conditions including the initial number of infectious persons, the observation period (in days), and the simulation period (in days) of a simulation study.
+
+Real world COVID data (https://ourworldindata.org/coronavirus) is then applied to tune model parameters for country of interest. We used the real infection rate since March 1, 2020 of one country as our infection rate pattern in the proposed model, and used country population as the population limits. We assumed the immunity proportion to be 0.001 and the initial number of infectious individuals to be the sum of newly confirmed cases over the period of two weeks prior to 1 March. Finally we tried different ranges of muT and sizeV, and selected the ones that minimize the sum of squared difference between real daily total cases and simulation total cases.
+
+To count for the uncertainty in a Monte Carlo simulation study, a bootstrap approach was followed to obtain the estimated median and interquartile values of the number of the infection active cases and the daily new cases over the observation period. Each simulation model was run for 100 times and the median values were considered as the most likely estimation and the uncertainty level was characterized by the interquartile range.
+
+# Simulation Replication
+
+This section replicates Xie's simulation results for 12 disease transmission scenarios in the paper "A novel Monte Carlo Simulation procedure for modelling COVID-19 spread over time". This simulation is based on three hypothetical infection rate patterns and three different simulation settings. The three hypothetical infection rate patterns are as follows:
+
+-   **pattern 1:** rr = c(rep(3,30), 2,2,1.5,1.5, 1.2,1.2,rep(0.8,4),rep(0.5,10),rep(0.1,50))
+-   **pattern 2:** rr = c(rep(3,25), 2,2,1.5,1.5, 1.2,1.2,rep(0.8,4),rep(0.5,10),rep(0.1,55))
+-   **pattern 3:** rr = c(rep(2.5,30), 2,2,1.5,1.5, 1.2,1.2,rep(0.8,4),rep(0.5,10),rep(0.1,50))
+
+The three simulation settings are:
+
+-   nd = 100, muT = 4, sizeV = 1
+-   nd = 100, muT = 4, sizeV = 0.9
+-   nd = 100, muT = 3.6, sizeV = 1
+
+The three panels in the top row showed that by only five days earlier of enforcing intervention, the number of the active cases would peak earlier accordingly with a much lower peak value (black curves versus blue curves). The three panels in the bottom row showed that by reducing Rt from 3 to 2.5 for the first 30 days, the number of the active cases would reach the peak on the same day but with a much lower peak value (black curves versus red curves). Reducing the muT values (3.6 versus 4 days) would increase the peak level quite substantially. 
+
+```{r echo = FALSE}
+# pattern 1
+rr_1 = c(rep(3,30), 2,2,1.5,1.5, 1.2,1.2,rep(0.8,4),rep(0.5,10),rep(0.1,50))
+set.seed(123)
+p11 = TransSimu(Rt = rr_1, nd = 100, muT = 4, sizeV = 1)
+set.seed(123)
+p12 = TransSimu(Rt = rr_1, nd = 100, muT = 4, sizeV = 0.9)
+set.seed(123)
+p13 = TransSimu(Rt = rr_1, nd = 100, muT = 3.6, sizeV = 1)
+
+# pattern 2: government's intervention enforced 5 days earlier
+rr_2 = c(rep(3,25), 2,2,1.5,1.5, 1.2,1.2,rep(0.8,4),rep(0.5,10),rep(0.1,55))
+set.seed(123)
+p11c = TransSimu(Rt = rr_2, nd = 100, muT = 4, sizeV = 1)
+set.seed(123)
+p12c = TransSimu(Rt = rr_2, nd = 100, muT = 4, sizeV = 0.9)
+set.seed(123)
+p13c = TransSimu(Rt = rr_2, nd = 100, muT = 3.6, sizeV = 1)
+
+# pattern 3: starting Rt were lower than 3
+rr_3 = c(rep(2.5,30), 2,2,1.5,1.5, 1.2,1.2,rep(0.8,4),rep(0.5,10),rep(0.1,50))
+set.seed(123)
+p21c = TransSimu(Rt = rr_3, nd = 100, muT = 4, sizeV = 1)
+set.seed(123)
+p22c = TransSimu(Rt = rr_3, nd = 100, muT = 4, sizeV = 0.9)
+set.seed(123)
+p23c = TransSimu(Rt = rr_3, nd = 100, muT = 3.6, sizeV = 1)
+```
+
+```{r echo = FALSE, fig.width=10, fig.height=6}
+par(mfrow=c(2,3))
+barplot(p11$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "grey", ylab = "daily number of active cases")
+barplot(p11c$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "blue", ylab = "daily number of active cases", add = TRUE)
+
+barplot(p12$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "grey", ylab = "daily number of active cases")
+barplot(p12c$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "blue", add = TRUE, ylab = "daily number of active cases")
+
+barplot(p13$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "grey", ylab = "daily number of active cases")
+barplot(p13c$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "blue", add = TRUE, ylab = "daily number of active cases")
+
+barplot(p11$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "grey", ylab = "daily number of active cases")
+barplot(p21c$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "red", add = TRUE, ylab = "daily number of active cases")
+
+barplot(p12$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "grey", ylab = "daily number of active cases")
+barplot(p22c$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "red", add = TRUE, ylab = "daily number of active cases")
+
+barplot(p13$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "grey", ylab = "daily number of active cases")
+barplot(p23c$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "red", add = TRUE, ylab = "daily number of active cases")
+```
+
+# Simulation Extension on US and UK data
+
+This section uses US and UK real COVID data to better tune the model,  aiming to get a more accurate prediction of daily active cases and new cases in both US and UK. Based on the spread model outputs, we can better understand how infection rate and population limits affect daily active cases and new cases in these two countries.
+
+## UK
+
+### Model Set Up
+
+After applying UK data to the model, we observed that parameter muT is best to be 3.65 and parameter sizeV is best to be 0.8. As we can see on the left plot, the black dots represent the true total confirmed cases in the UK, whereas the red line represents model predictions. It seems that the proposed model slightly underestimates total confirmed cases before May, but overlaps with the true data well after June.
+
+```{r echo = FALSE, cache=TRUE, message = FALSE}
+#covid_df = read_csv("/Users/zhengren/Desktop/PennSIVE/Penn Class/BSTA_670/hw/Final Project/owid-covid-data.csv")
+uk = covid_df %>% filter(location == "United Kingdom", date > "2020-03-01" & date < "2022-12-31") %>% dplyr::select(c(3,4:6, 17, 63))
+n0_uk = covid_df %>% filter(location == "United Kingdom", date >= "2020-02-16" & date <= "2020-02-29") %>% pull(new_cases) %>% sum()
+uk_pop = unique(uk$population)
+# real world infection rate
+rr_uk = uk$reproduction_rate
+rr_uk[which(is.na(rr_uk))] = rr_uk[which(is.na(rr_uk)) + 1]
+
+range1 = seq(3,4,0.05)
+range2 = seq(0.8,1.2,0.1)
+
+#best_uk = parameter_tunning(range1,range2, df, parallel = TRUE, Rt = rr_uk, n0 = n0_uk, limit = uk_pop)
+
+best_uk = data.frame(cbind(3.65, 0.8, 42638089520))
+colnames(best_uk) = c("range1", "range2", "dv")
+```
+
+```{r echo = FALSE, cache=TRUE, message = FALSE, fig.height=4}
+set.seed(123)
+sim_uk = TransSimu(nd = 200, Rt = rr_uk, muT = best_uk$range1, sizeV = best_uk$range2, n0 = n0_uk, limit = uk_pop)
+par(mfrow=c(1,2))
+options(scipen=999)
+plot(uk$date[1:200], uk$total_cases[1:200], xlab = "time", ylab = "total confirmed cases",pch = 20, cex = 0.5)
+lines(uk$date[1:200], sim_uk$total[1:200], col = 'red')
+#axis(2, seq(0, 400000, 200000))
+plot(uk$date[1:300], sim_uk$riskpopu, type = 'l', xlab = "time", ylab = "daily number of active cases")
+#axis(2, seq(0, 25000, 5000))
+```
+
+Based on the model outputs, we identified 2 peaks of daily active cases, one is `r uk$date[which(sim_uk$riskpopu == max(sim_uk$riskpopu))]`, the other is `r uk$date[which(sim_uk$riskpopu == max(sim_uk$riskpopu[122:300]))]`. The first peak is worse than the second one.
+
+### Bootstrap Results
+
+```{r echo = FALSE, cache=TRUE, message = FALSE, fig.height=4}
+par(mfrow=c(1,2))
+options(scipen=999)
+plot(uk$date[1:300], uk_boot$out_75_uk, type = 'l', col = 'red', ylab = "daily number of active cases", xlab = "time")
+lines(uk$date[1:300], uk_boot$out_median_uk, col = 'black')
+lines(uk$date[1:300], uk_boot$out_25_uk, col = 'green')
+abline(v = uk$date[which(uk_boot$out_median_uk == max(uk_boot$out_median_uk))], lty = 2, col = "brown")
+
+uk_total_75 = cumsum(c(24, uk_boot$new_75_uk))
+uk_total_median = cumsum(c(24, uk_boot$new_median_uk))
+uk_total_25 = cumsum(c(24, uk_boot$new_25_uk))
+options(scipen=999)
+plot(uk$date[1:301], uk_total_75, type = 'l', col = 'red', ylab = "total number of cases", xlab = "time")
+lines(uk$date[1:301], uk_total_median, col = 'black')
+lines(uk$date[1:301], uk_total_25, col = 'green')
+
+```
+
+The bootstrap result shows that the first peak of daily active cases is around `r uk$date[which(uk_boot$out_median_uk == max(uk_boot$out_median_uk))]` and the peak value is `r round(max(uk_boot$out_median_uk))`; the second peak of daily active cases is around `r uk$date[which(uk_boot$out_median_uk == max(uk_boot$out_median_uk[122:300]))]` and the peak value is `r round(max(uk_boot$out_median_uk[122:300]))`.
+
+## US
+
+### Model Set Up
+
+After applying US data to the model, we observed that parameter muT is best to be 5 and parameter sizeV is best to be 1.1. As we can see in the left plot, the red line overlaps extremely well with the black dots.
+
+```{r echo = FALSE, cache=TRUE, message = FALSE}
+us = covid_df %>% filter(location == "United States", date > "2020-03-01" & date < "2022-12-31") %>% dplyr::select(c(3,4:6, 17, 63))
+n0_us = covid_df %>% filter(location == "United States", date >= "2020-02-16" & date <= "2020-02-29") %>% pull(new_cases) %>% sum()
+us_pop = unique(us$population)
+rr_us = us$reproduction_rate
+rr_us[which(is.na(rr_us))] = rr_us[4]
+
+range1 = seq(4.5,5,0.5)
+range2 = seq(1,1.2,0.1)
+
+#best_us = parameter_tunning(range1,range2, us, parallel = TRUE, Rt = rr_us, n0 = n0_us, limit = us_pop)
+
+best_us = data.frame(cbind(5, 1.1, 2414169210321))
+colnames(best_us) = c("range1", "range2", "dv")
+
+```
+
+```{r echo = FALSE, cache=TRUE, message = FALSE, fig.height=4}
+set.seed(123)
+sim_us = TransSimu(nd = 200, Rt = rr_us, muT = best_us$range1, sizeV = best_us$range2, n0 = n0_us, limit = us_pop)
+
+par(mfrow=c(1,2))
+options(scipen=999)
+plot(us$date[1:200], us$total_cases[1:200], xlab = "time", ylab = "total confirmed cases", pch = 20, cex = 0.5)
+lines(us$date[1:200], sim_us$total[1:200], col = 'red')
+plot(us$date[1:300], sim_us$riskpopu, type = 'l', xlab = "time", ylab = "daily number of active cases")
+
+
+```
+
+Based on the model outputs, we also identified 2 peaks of daily active cases, one is `r us$date[which(sim_us$riskpopu == max(sim_us$riskpopu[1:110]))]`, the other is `r us$date[which(sim_us$riskpopu == max(sim_us$riskpopu))]`. The second peak is worse than the first one.
+
+### Bootstrap Results
+
+```{r echo = FALSE, cache=TRUE, message = FALSE, fig.height=4}
+par(mfrow=c(1,2))
+options(scipen=999)
+plot(us$date[1:300], us_boot$out_75_us, type = 'l', col = 'red', ylab = "daily number of active cases", xlab = "time")
+lines(us$date[1:300], us_boot$out_median_us, col = 'black')
+lines(us$date[1:300], us_boot$out_25_us, col = 'green')
+abline(v = us$date[which(us_boot$out_median_us == max(us_boot$out_median_us))], lty = 2, col = "brown")
+
+us_total_75 = cumsum(c(24, us_boot$new_75_us))
+us_total_median = cumsum(c(24, us_boot$new_median_us))
+us_total_25 = cumsum(c(24, us_boot$new_25_us))
+options(scipen=999)
+plot(us$date[1:301], us_total_75, type = 'l', col = 'red', ylab = "total number of cases", xlab = "time")
+lines(us$date[1:301], us_total_median, col = 'black')
+lines(us$date[1:301], us_total_25, col = 'green')
+```
+
+The bootstrap result shows that the first peak of daily active cases is around `r us$date[which(us_boot$out_median_us == max(us_boot$out_median_us[1:110]))]` and the peak value is `r round(max(us_boot$out_median_us[1:110]))`; the second peak of daily active cases is around `r us$date[which(us_boot$out_median_us == max(us_boot$out_median_us))]` and the peak value is `r round(max(us_boot$out_median_us))`.
+
+
+```{r echo = FALSE, cache=TRUE, message = FALSE}
+plot(uk$date[1:300], rr_uk[1:300], type = 'l', xlab = "time", ylab = "infection rate")
+lines(us$date[1:300], rr_us[1:300], col = 'purple')
+legend(x = "topright", lty = c(1,1), col = c("black", "purple"), legend = c("uk", "us"),  box.lty=0)
+```
+
+```{r echo = FALSE, cache=TRUE, message = FALSE}
+uk_infection = sapply(quantile(rr_uk[1:300], seq(0,1,length.out = 5)), round, digits = 2, USE.NAMES = FALSE)
+us_infection = sapply(quantile(rr_us[1:300], seq(0,1,length.out = 5)), round, digits = 2, USE.NAMES = FALSE)
+
+result = rbind(uk_infection, us_infection)
+kbl(result, caption = "Infection Rate Summary Table", booktabs = T) %>%
+kable_styling(latex_options = c("striped", "hold_position"))
+
+```
