@@ -10,13 +10,15 @@
 #' 
 #' @return the function returns a data frame of the best value of muT, sizeV, and the minimized difference.
 #' 
+#' @import tidyr parallel dplyr
+#' 
 #' @export
 
-
+utils::globalVariables(c("dv"))
 parameter_tuning = function(range1,range2, df, parallel = TRUE, ...){
-  param = expand_grid(range1, range2)
+  param = tidyr::expand_grid(range1, range2)
   if (parallel == TRUE){
-    best = mclapply(1:nrow(param), function(i){
+    best = parallel::mclapply(1:nrow(param), function(i){
       set.seed(123)
       sim = TransSimu(nd = 200, muT = param$range1[i], sizeV = param$range2[i], ...)
       pred = sim$total[1:200]
@@ -25,7 +27,7 @@ parameter_tuning = function(range1,range2, df, parallel = TRUE, ...){
       dv_df = data.frame(cbind(param$range1[i], param$range2[i], dv))
       colnames(dv_df) = c("range1", "range2", "dv")
       return(dv_df)
-    }, mc.cores = detectCores()) %>% bind_rows() %>% arrange(dv) %>% head(1)
+    }, mc.cores = detectCores()) %>% bind_rows() %>% dplyr::arrange(dv) %>% head(1)
   }else{
     best = lapply(1:nrow(param), function(i){
       set.seed(123)
@@ -36,7 +38,7 @@ parameter_tuning = function(range1,range2, df, parallel = TRUE, ...){
       dv_df = data.frame(cbind(param$range1[i], param$range2[i], dv))
       colnames(dv_df) = c("range1", "range2", "dv")
       return(dv_df)
-    }) %>% bind_rows() %>% arrange(dv) %>% head(1)
+    }) %>% bind_rows() %>% dplyr::arrange(dv) %>% head(1)
   }
   return(best)
 }

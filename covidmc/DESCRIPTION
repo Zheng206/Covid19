@@ -1,17 +1,21 @@
 Package: covidmc
-Title: What the Package Does (One Line, Title Case)
+Title: A Package for modeling COVID-19 Spread among 
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
+    person("Zheng", "Ren", , "zren1422t@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Description: The package models daily active cases, daily new cases and daily total number of cases based on parameters like infection rate, mean infectious time, population limits etc. Real world data is included for model tuning.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Depends: 
     R (>= 2.10)
 LazyData: true
+LazyDataCompression: xz
 Imports: 
-    dplyr
+    dplyr,
+    parallel,
+    stats,
+    tidyr,
+    utils

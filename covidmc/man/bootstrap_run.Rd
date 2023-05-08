@@ -17,5 +17,5 @@ bootstrap_run(n, country, covid_df)
 the function returns a list of daily active cases number, daily new cases number after bootstrapping.
 }
 \description{
-This function helps to do bootstrap. 'dplyr' package is used for bootstrap data preparation.
+This function helps to do bootstrap.
 }

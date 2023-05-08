@@ -13,13 +13,17 @@
 #' 
 #' @return the function returns a list of daily active cases number, daily new cases number and daily total number of cases over the observation period.
 #' 
+#' @import utils
+#' @importFrom stats rpois rnbinom
+#'
+#' 
 #' @examples 
-#' rr = c(rep(3.4,10),rep(3.1,10),rep(2.2,5),rep(1.7,4),rep(1.4,6),rep(1.2,6),rep(1.1,4),rep(1,8),rep(0.9,7),rep(0.6,10),rep(0.1,30))
+#' rr = c(rep(3.4,20),rep(1.2,6),rep(1.1,4),rep(1,20),rep(0.6,20),rep(0.1,30))
 #' TransSimu(days = 100, nd = 30, Rt = rr)
 #' 
 #' @export
 
-TransSimu = function(days = 300, nd = 30, Rt = rr, muT = 4, sizeV = 1,limit=1000000, pp=0.001,n0=1) 
+TransSimu = function(days = 300, nd = 30, Rt, muT = 4, sizeV = 1,limit=1000000, pp=0.001,n0=1) 
 {
   kk = atrisk = rep(0,days); nn = length(kk)   
   # kk: daily new cases; atrisk: number of active cases each day; simulation period of nn days

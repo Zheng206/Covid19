@@ -7,10 +7,10 @@
 TransSimu(
   days = 300,
   nd = 30,
-  Rt = rr,
+  Rt,
   muT = 4,
   sizeV = 1,
-  limit = 1000000,
+  limit = 1e+06,
   pp = 0.001,
   n0 = 1
 )
@@ -39,7 +39,7 @@ the function returns a list of daily active cases number, daily new cases number
 This function gives out the distributions of certain measurements that help evaluate COVID situation. These measurements include daily new cases, active cases etc.
 }
 \examples{
-rr = c(rep(3.4,10),rep(3.1,10),rep(2.2,5),rep(1.7,4),rep(1.4,6),rep(1.2,6),rep(1.1,4),rep(1,8),rep(0.9,7),rep(0.6,10),rep(0.1,30))
+rr = c(rep(3.4,20),rep(1.2,6),rep(1.1,4),rep(1,20),rep(0.6,20),rep(0.1,30))
 TransSimu(days = 100, nd = 30, Rt = rr)
 
 }

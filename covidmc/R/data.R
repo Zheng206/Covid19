@@ -1,8 +1,8 @@
 #' Real COVID-19 Data from Our World in Data
 #'
-#' This data set gives real COVID data of 255 countries. The COVID related measurements include 
-#' daily new cases, total confirmed cases, reproduction_rate, total vaccinations etc and the measuring period covers 
-#' from 2020-01-03 to 2023-04-26. This data set also includes country specific information, like population, life expectancy, hospital beds etc.
+#' This data set gives real COVID data of US and UK. The COVID related measurements include 
+#' daily new cases, total confirmed cases, reproduction_rate etc and the measuring period covers 
+#' from 2020-01-03 to 2023-04-26. This data set also includes country specific information, like population.
 #'
 #' @docType data
 #'
