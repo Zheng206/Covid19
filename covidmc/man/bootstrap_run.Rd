@@ -9,15 +9,13 @@ bootstrap_run(n, country, covid_df)
 \arguments{
 \item{n}{number of times to bootstrap}
 
+\item{country}{country of interest}
+
 \item{covid_df}{the real world covid data set}
 }
 \value{
 the function returns a list of daily active cases number, daily new cases number after bootstrapping.
 }
 \description{
-This function helps to do bootstrap.
-}
-\examples{
-bootstrap_run(3, uk, covid_df)
-
+This function helps to do bootstrap. 'dplyr' package is used for bootstrap data preparation.
 }

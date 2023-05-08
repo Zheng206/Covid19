@@ -10,7 +10,7 @@ TransSimu(
   Rt = rr,
   muT = 4,
   sizeV = 1,
-  limit = 1e+06,
+  limit = 1000000,
   pp = 0.001,
   n0 = 1
 )

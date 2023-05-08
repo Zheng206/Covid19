@@ -1,14 +1,15 @@
 #' Bootstrap in covid simulation  
 #' 
-#' This function helps to do bootstrap.
+#' This function helps to do bootstrap. 'dplyr' package is used for bootstrap data preparation. 
 #' 
 #' @param n number of times to bootstrap
+#' @param country country of interest
 #' @param covid_df the real world covid data set
 #' 
 #' @return the function returns a list of daily active cases number, daily new cases number after bootstrapping.
 #' 
-#' @examples 
-#' bootstrap_run(3, uk, covid_df)
+#' @import dplyr
+#' @importFrom TransSimu
 #' 
 #' @export
 

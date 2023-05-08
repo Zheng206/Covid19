@@ -3,3 +3,4 @@
 export(TransSimu)
 export(bootstrap_run)
 export(parameter_tuning)
+import(dplyr)

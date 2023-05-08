@@ -3,6 +3,8 @@ title: "Covid Spread Modelling"
 author: "Zheng Ren"
 date: "`r Sys.Date()`"
 output: pdf_document
+bibliography: citations.bib
+link-citations: true
 fontsize: 11pt
 geometry: margin=1in
 ---
@@ -10,56 +12,61 @@ geometry: margin=1in
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,warning = FALSE)
 options(scipen=999)
-setwd("~/Desktop/PennSIVE/Penn Class/BSTA_670/Covid_Spread")
-devtools::install("covidmc")
+devtools::install_github('Zheng206/Covid19/covidmc')
 library(covidmc)
 data(covid_df)
 library(dplyr)
 library(tidyverse)
 library(parallel)
 library(kableExtra)
+library(microbenchmark)
 ```
 
 # Set Up Section
 
-To install the package from GitHub, type:
+To reproduce the simulation results, the following steps should be followed:
+
+1.  install the package from GitHub and import the package:
 
 ```{r eval=FALSE}
-devtools::install_github('Zheng206/Covid19')
-```
-
-To import required packages and read in required data sets for this project, type:
-
-```{r eval=FALSE}
+devtools::install_github('Zheng206/Covid19/covidmc')
 library(covidmc)
 data(covid_df)
-library(dplyr)
-library(tidyverse)
-library(parallel)
-ukfile="https://raw.githubusercontent.com/lrjoshi/webpage/master/public/post/c159s.csv"
+```
 
-usfile="https://raw.githubusercontent.com/lrjoshi/webpage/master/public/post/c159s.csv"
+2.  read in simulation results for the purpose of illustration, download addresses are as follows:
+
+-   UK bootstrap results: <https://raw.githubusercontent.com/Zheng206/Covid19/main/data/uk_tune.csv>
+-   US bootstrap results: <https://raw.githubusercontent.com/Zheng206/Covid19/main/data/us_new.csv>
+
+```{r echo = FALSE, message = FALSE}
+ukfile="https://raw.githubusercontent.com/Zheng206/Covid19/main/data/uk_tune.csv"
+usfile="https://raw.githubusercontent.com/Zheng206/Covid19/main/data/us_new.csv"
 uk_boot = read_csv(url(ukfile))
 us_boot = read_csv(url(usfile))
 ```
 
-(Note: uk_boot and us_boot are bootstrap results)
+3.  R CMD Check
+
+```{r echo = FALSE, message = FALSE, eval=FALSE}
+devtools::check(pkg = "covidmc")
+```
 
 # Introduction
 
 The coronavirus disease 2019 (COVID-19) epidemic was officially declared as a pandemic in early March 2020 by WHO and has caused heavy life losses and damages to social-economics globally. A better understanding of the spread of virus is essential for preventing potential eruptions of the disease, better allocating social and medical resources, and diminishing the overall time that a pandemic lasts.
 
-This study is based on Gang Xie's paper 'A novel Monte carlo simulation procedure for modelling COVID-19 spread over time' (2020), aiming to develop a COVID-19 spread dynamics model that can be used as a decision making tool for disease control. The proposed method is characterized by a Monte Carlo Simulation model, which captured infection rate and population changes, and treated each individual in a population as a random point.
+This study is based on the paper "A novel Monte carlo simulation procedure for modelling COVID-19 spread over time"[@Xie2020], aiming to develop a COVID-19 spread dynamics model that can be used as a decision making tool for disease control. The proposed method is characterized by a Monte Carlo Simulation model, which captured infection rate and population changes, and treated each individual in a population as a random point.
 
-This study builds on top of Xie's model. The proposed model includes daily estimated total number of confirmed cases in the outputs as well. To better adapt the proposed model to real world situation, real world COVID data is applied to the model for a more accurate infection rate pattern and population limits. Other parameters are also tuned to best fit each country's total confirmed cases pattern.
+This study builds on top of Xie's model. Beyond estimated daily active cases and new cases, the proposed model includes daily estimated total number of confirmed cases in the outputs as well for parameter tuning. This study also used real world COVID data for a more accurate infection rate pattern and population limits, aiming to better adapt the proposed model to the real world situation.
 
 # Method
 
-The key parameters and assumptions of the proposed model were: (1) the infection rate parameter "Rt"; (2) the actual number of people being infected by each infection active case is determined by a Poisson distribution with the mean Rt; (3) the exact number of days for someone getting infected follows a negative binomial distribution with the mean/expected time "muT" in days; (4) The limit of the number of people and the immunity proportion in a study population; (5) Other initial conditions including the initial number of infectious persons, the observation period (in days), and the simulation period (in days) of a simulation study.
+The key parameters and assumptions of the proposed model were: (1) the infection rate parameter "Rt"; (2) the actual number of people being infected by each active case is determined by a Poisson distribution with the mean Rt; (3) the exact number of days for someone getting infected follows a negative binomial distribution with the mean/expected time "muT" in days; (4) The limit of the number of people and the immunity proportion in a study population; (5) Other initial conditions including the initial number of infectious people, the observation period (in days), and the simulation period (in days) of a simulation study.
 
-Real world COVID data (<https://ourworldindata.org/coronavirus>) is then applied to tune model parameters for country of interest. We used the real infection rate since March 1, 2020 of one country as our infection rate pattern in the proposed model, and used country population as the population limits. We assumed the immunity proportion to be 0.001 and the initial number of infectious individuals to be the sum of newly confirmed cases over the period of two weeks prior to 1 March. Finally we tried different ranges of muT and sizeV, and selected the ones that minimize the sum of squared difference between real daily total cases and simulation total cases.
+Real world COVID data (<https://ourworldindata.org/coronavirus>) is then applied to tune model parameters for the country of interest. We used the real infection rate since March 1, 2020 as our infection rate pattern in the proposed model, and used country estimated population as the population limits. We assumed the immunity proportion to be 0.001 and the initial number of infectious individuals to be the sum of newly confirmed cases over the period of two weeks prior to 1 March, 2020. Finally we tried different ranges of muT and sizeV, and selected the ones that minimize the sum of squared difference between the real daily total cases and the simulated total cases.
 
-To count for the uncertainty in a Monte Carlo simulation study, a bootstrap approach was followed to obtain the estimated median and interquartile values of the number of the infection active cases and the daily new cases over the observation period. Each simulation model was run for 100 times and the median values were considered as the most likely estimation and the uncertainty level was characterized by the interquartile range.
+To count for the uncertainty in a Monte Carlo simulation study, a bootstrap approach was followed to obtain the estimated median and interquartile values of the number of the active cases and the daily new cases over the observation period. Each simulation model was run for 100 times and the median values were considered as the most likely estimation. The uncertainty level was characterized by the interquartile range.
 
 # Simulation Replication
 
@@ -127,15 +134,40 @@ barplot(p13$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "grey", ylab = "
 barplot(p23c$riskpopu, xlim = c(0,100), ylim = c(0,10000), col = "red", add = TRUE, ylab = "daily number of active cases")
 ```
 
+## Simulation Time Statistics Summary
+
+To have a better understanding of the time the proposed model requires for a single iteration, we tested on two simulation settings. One simulation setting has a simulation period of 100 days and the second one has one of 200 days. As we can see, the time a single iteration take to run significantly increased when we doubled the simulation period. Therefore, it is rather essential to include parallel processing or even high performance computing clusters in the step of tuning parameters and bootstrapping.
+
+```{r eval = FALSE, echo = FALSE, message = FALSE}
+rr_100 = c(rep(3,30), rep(2,6), rep(0.8,4),rep(0.5,10),rep(0.1,50))
+
+rr_200 = c(rep(3,60), rep(2,12), rep(0.8,8),rep(0.5,20),rep(0.1,100))
+
+statistics = microbenchmark(
+  "TransSimu 100" = TransSimu(Rt = rr_100, nd = 100, muT = 4, sizeV = 1),
+  "TransSimu 200" = TransSimu(Rt = rr_200, nd = 200, muT = 4, sizeV = 1)
+)
+
+```
+
+```{r echo = FALSE, cache=TRUE, message = FALSE}
+statistics = read_csv("/Users/zhengren/Desktop/PennSIVE/Penn Class/BSTA_670/Covid_Spread/data/time_statistics.csv")
+kbl(statistics, caption = "Time Statistics Table", booktabs = T) %>%
+kable_styling(latex_options = c("striped", "hold_position"))
+
+```
+
 # Simulation Extension on US and UK data
 
-This section uses US and UK real COVID data to better tune the model, aiming to get a more accurate prediction of daily active cases and new cases in both US and UK. Based on the spread model outputs, we can better understand how infection rate and population limits affect daily active cases and new cases in these two countries.
+This section uses US and UK real COVID data to better tune the model, aiming to get a more accurate prediction of daily active cases and new cases for better policy decision making. Based on the spread model outputs, we can better understand how infection rate and population limits affect daily active cases and new cases in these two countries.
 
 ## UK
 
 ### Model Set Up
 
-After applying UK data to the model, we observed that parameter muT is best to be 3.65 and parameter sizeV is best to be 0.8. As we can see on the left plot, the black dots represent the true total confirmed cases in the UK, whereas the red line represents model predictions. It seems that the proposed model slightly underestimates total confirmed cases before May, but overlaps with the true data well after June.
+To first set up the model, we chose 300 days as our observation period and set a simulation period of 200 days. We used the real COVID data from March 1, 2020 to December 16, 2020 for both US and UK.
+
+After applying UK data to the model, we observed that the simulated daily total number of cases are closest to the actual ones when parameter muT is 3.65 and parameter sizeV is 0.8. As we can see on the left plot, the black dots represent the true total confirmed cases in the UK, whereas the red line represents model predictions. It seems that the proposed model slightly underestimated total confirmed cases before May 2020, but overlaps with the true data pretty well after June 2020.
 
 ```{r echo = FALSE, cache=TRUE, message = FALSE}
 #covid_df = read_csv("/Users/zhengren/Desktop/PennSIVE/Penn Class/BSTA_670/hw/Final Project/owid-covid-data.csv")
@@ -167,7 +199,7 @@ plot(uk$date[1:300], sim_uk$riskpopu, type = 'l', xlab = "time", ylab = "daily n
 #axis(2, seq(0, 25000, 5000))
 ```
 
-Based on the model outputs, we identified 2 peaks of daily active cases, one is `r uk$date[which(sim_uk$riskpopu == max(sim_uk$riskpopu))]`, the other is `r uk$date[which(sim_uk$riskpopu == max(sim_uk$riskpopu[122:300]))]`. The first peak is worse than the second one.
+Based on the model outputs, we identified 2 peaks of daily active cases, one is `r uk$date[which(sim_uk$riskpopu == max(sim_uk$riskpopu))]`, the other is `r uk$date[which(sim_uk$riskpopu == max(sim_uk$riskpopu[122:300]))]`. Comparing the two peaks, the first peak is worse than the second one.
 
 ### Bootstrap Results
 
@@ -185,7 +217,7 @@ colnames(uk_boot) = c(paste0("out_median_",country), paste0("out_25_",country), 
 ```
 
 ```{r echo = FALSE, cache=TRUE, message = FALSE, fig.height=4}
-uk_boot = read_csv("./data/uk_tune.csv")
+#uk_boot = read_csv("./data/uk_tune.csv")
 par(mfrow=c(1,2))
 options(scipen=999)
 plot(uk$date[1:300], uk_boot$out_75_uk, type = 'l', col = 'red', ylab = "daily number of active cases", xlab = "time")
@@ -220,15 +252,15 @@ rr_us[which(is.na(rr_us))] = rr_us[4]
 
 range1 = seq(4.5,5,0.5)
 range2 = seq(1,1.2,0.1)
+```
 
-#best_us = parameter_tunning(range1,range2, us, parallel = TRUE, Rt = rr_us, n0 = n0_us, limit = us_pop)
-
-best_us = data.frame(cbind(5, 1.1, 2414169210321))
-colnames(best_us) = c("range1", "range2", "dv")
-
+```{r  eval=FALSE, echo = FALSE, message = FALSE}
+best_us = parameter_tunning(range1,range2, us, parallel = TRUE, Rt = rr_us, n0 = n0_us, limit = us_pop)
 ```
 
 ```{r echo = FALSE, cache=TRUE, message = FALSE, fig.height=4}
+best_us = data.frame(cbind(5, 1.1, 2414169210321))
+colnames(best_us) = c("range1", "range2", "dv")
 set.seed(123)
 sim_us = TransSimu(nd = 200, Rt = rr_us, muT = best_us$range1, sizeV = best_us$range2, n0 = n0_us, limit = us_pop)
 
@@ -258,7 +290,7 @@ colnames(us_boot) = c(paste0("out_median_",country), paste0("out_25_",country), 
 ```
 
 ```{r echo = FALSE, cache=TRUE, message = FALSE, fig.height=4}
-us_boot = read_csv("./data/us_new.csv")
+#us_boot = read_csv("./data/us_new.csv")
 par(mfrow=c(1,2))
 options(scipen=999)
 plot(us$date[1:300], us_boot$out_75_us, type = 'l', col = 'red', ylab = "daily number of active cases", xlab = "time")
@@ -279,13 +311,13 @@ The bootstrap result shows that the first peak of daily active cases is around `
 
 ## Simulation Result Discussion
 
-Based on UK and US simulation results, we can see a clear difference in the daily infection active cases pattern. Multiple factors can contribute to this difference, but we focused more on the mean time infectious people can infect others, population limits and infection rate pattern in this study.
+Based on UK and US simulation results, we can see a clear difference in the daily active cases pattern. Multiple factors can contribute to this difference, but we focused more on three of them: (1) the mean time infectious people can infect others, (2) population limits and (3) infection rate pattern in this study.
 
-The mean infectious time (muT): The United Kingdom has a mean infectious time of 3.65 days whereas the United States has a mean infectious time of 5 days. In other words, an infectious individual in US poses a longer threat to the rest of people.
+**The mean infectious time (muT):** The United Kingdom has a mean infectious time of 3.65 days whereas the United States has a mean infectious time of 5 days. In other words, an infectious individual in US poses a longer threat to the rest of people in the US.
 
-The population limits: UK has an estimated population of 67508936 people whereas US has an estimated population of 338289856 people. The larger population in US also explains a general greater number of daily infection active cases in US.
+**The population limits:** UK has an estimated population of 67508936 whereas US has an estimated population of 338289856. The larger population in the US also explains a general greater number of daily active cases in the US, especially at peaks.
 
-The infection rate pattern (Rt): In general, UK has a smaller infection rate over time, as we can see in the quantile summary table (Table 1). However, the change of infection rate over time in both countries lead to different peak time of daily active cases.
+**The infection rate pattern (Rt):** In general, UK has a smaller infection rate over time, as we can see in the quantile summary table (Table 2). However, the different infection rate patterns over time in both countries are associated with different peak times of daily active cases.
 
 ```{r echo = FALSE, cache=TRUE, message = FALSE}
 uk_infection = sapply(quantile(rr_uk[1:300], seq(0,1,length.out = 5)), round, digits = 2, USE.NAMES = FALSE)
@@ -297,10 +329,18 @@ kable_styling(latex_options = c("striped", "hold_position"))
 
 ```
 
-In UK, the infection rate continuously increased from June to October in 2020. This increases seems to be associated with the second peak in September; In US, the inflation rate stopped dropping at an infection rate of 1 in May 2020 and continuously increased afterwards until July 2020. This infection rate pattern seems to be associated with the second peak in July 2020.
+In the UK, the infection rate continuously increased from June to October in 2020. This increases seems to explain the second peak in September; In the US, the inflation rate stopped dropping at an infection rate around 1 in May 2020 and continuously increased afterwards until July 2020. This infection rate pattern seems to be associated with the second peak in July 2020. Therefore, a continuous increase of infection rate seems to contribute to a peak of daily active cases. It is recommended to control the time that a continuous increase of infection rate last in order to prevent the eruption of active cases.
 
 ```{r echo = FALSE, cache=TRUE, message = FALSE}
 plot(uk$date[1:300], rr_uk[1:300], type = 'l', xlab = "time", ylab = "infection rate")
 lines(us$date[1:300], rr_us[1:300], col = 'purple')
 legend(x = "topright", lty = c(1,1), col = c("black", "purple"), legend = c("uk", "us"),  box.lty=0)
 ```
+
+# Discussion
+
+This study provides us a tool to better predict the spread of covid among people based on historical data. The proposed simulation model also shows a good potential in performing what-if analysis for decision making for combating COVID-19 in specific and any other infectious diseases in general. 
+
+However, this study also has some limitations. First of all, the current approach heavily relies on assumptions and historical data. Further researches should be conducted to test if the current approach is still robust when some assumptions are violated. Besides, the proposed model currently takes a lot of computing power especially when we have a long simulation period. Further improvements are expected to increase the efficiency of this model. Lastly, a better cost function should be designed to better tune model parameters.
+
+# Reference
