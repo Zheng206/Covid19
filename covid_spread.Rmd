@@ -36,14 +36,26 @@ data(covid_df)
 
 2.  read in simulation results for the purpose of illustration, download addresses are as follows:
 
--   UK bootstrap results: <https://raw.githubusercontent.com/Zheng206/Covid19/main/data/uk_tune.csv>
--   US bootstrap results: <https://raw.githubusercontent.com/Zheng206/Covid19/main/data/us_new.csv>
+-   **UK bootstrap results:** 
+
+    <https://raw.githubusercontent.com/Zheng206/Covid19/main/data/uk_tune.csv>
+
+-   **US bootstrap results:**  
+
+    <https://raw.githubusercontent.com/Zheng206/Covid19/main/data/us_new.csv>
+
+-   **Time Statistics results:**  
+
+    <https://raw.githubusercontent.com/Zheng206/Covid19/main/data/time_statistics.csv>
+
 
 ```{r echo = FALSE, message = FALSE}
 ukfile="https://raw.githubusercontent.com/Zheng206/Covid19/main/data/uk_tune.csv"
 usfile="https://raw.githubusercontent.com/Zheng206/Covid19/main/data/us_new.csv"
+timefile = "https://raw.githubusercontent.com/Zheng206/Covid19/main/data/time_statistics.csv"
 uk_boot = read_csv(url(ukfile))
 us_boot = read_csv(url(usfile))
+statistics = read_csv(url(timefile))
 ```
 
 3.  R CMD Check
@@ -151,7 +163,6 @@ statistics = microbenchmark(
 ```
 
 ```{r echo = FALSE, cache=TRUE, message = FALSE}
-statistics = read_csv("/Users/zhengren/Desktop/PennSIVE/Penn Class/BSTA_670/Covid_Spread/data/time_statistics.csv")
 kbl(statistics, caption = "Time Statistics Table", booktabs = T) %>%
 kable_styling(latex_options = c("striped", "hold_position"))
 
@@ -170,7 +181,6 @@ To first set up the model, we chose 300 days as our observation period and set a
 After applying UK data to the model, we observed that the simulated daily total number of cases are closest to the actual ones when parameter muT is 3.65 and parameter sizeV is 0.8. As we can see on the left plot, the black dots represent the true total confirmed cases in the UK, whereas the red line represents model predictions. It seems that the proposed model slightly underestimated total confirmed cases before May 2020, but overlaps with the true data pretty well after June 2020.
 
 ```{r echo = FALSE, cache=TRUE, message = FALSE}
-#covid_df = read_csv("/Users/zhengren/Desktop/PennSIVE/Penn Class/BSTA_670/hw/Final Project/owid-covid-data.csv")
 uk = covid_df %>% filter(location == "United Kingdom", date > "2020-03-01" & date < "2022-12-31") %>% dplyr::select(c(3,4:6, 17, 63))
 n0_uk = covid_df %>% filter(location == "United Kingdom", date >= "2020-02-16" & date <= "2020-02-29") %>% pull(new_cases) %>% sum()
 uk_pop = unique(uk$population)
@@ -180,8 +190,6 @@ rr_uk[which(is.na(rr_uk))] = rr_uk[which(is.na(rr_uk)) + 1]
 
 range1 = seq(3,4,0.05)
 range2 = seq(0.8,1.2,0.1)
-
-#best_uk = parameter_tunning(range1,range2, df, parallel = TRUE, Rt = rr_uk, n0 = n0_uk, limit = uk_pop)
 
 best_uk = data.frame(cbind(3.65, 0.8, 42638089520))
 colnames(best_uk) = c("range1", "range2", "dv")
