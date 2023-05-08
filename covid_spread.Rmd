@@ -182,7 +182,7 @@ After applying UK data to the model, we observed that the simulated daily total 
 
 ```{r echo = FALSE, cache=TRUE, message = FALSE}
 #covid_df = read_csv("/Users/zhengren/Desktop/PennSIVE/Penn Class/BSTA_670/hw/Final Project/owid-covid-data.csv")
-uk = covid_df %>% filter(location == "United Kingdom", date > "2020-03-01" & date < "2022-12-31") %>% dplyr::select(c(3,4:6, 17, 63))
+uk = covid_df %>% filter(location == "United Kingdom", date > "2020-03-01" & date < "2022-12-31") 
 n0_uk = covid_df %>% filter(location == "United Kingdom", date >= "2020-02-16" & date <= "2020-02-29") %>% pull(new_cases) %>% sum()
 uk_pop = unique(uk$population)
 # real world infection rate
@@ -256,7 +256,7 @@ The bootstrap result shows that the first peak of daily active cases is around `
 After applying US data to the model, we observed that parameter muT is best to be 5 and parameter sizeV is best to be 1.1. As we can see in the left plot, the red line overlaps extremely well with the black dots.
 
 ```{r echo = FALSE, cache=TRUE, message = FALSE}
-us = covid_df %>% filter(location == "United States", date > "2020-03-01" & date < "2022-12-31") %>% dplyr::select(c(3,4:6, 17, 63))
+us = covid_df %>% filter(location == "United States", date > "2020-03-01" & date < "2022-12-31") 
 n0_us = covid_df %>% filter(location == "United States", date >= "2020-02-16" & date <= "2020-02-29") %>% pull(new_cases) %>% sum()
 us_pop = unique(us$population)
 rr_us = us$reproduction_rate
